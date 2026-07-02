@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CELESTIUM 4.0 - Deep Physics Edition</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap'); 
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Orbitron', sans-serif; }
+body { background: #000; color: #aaddff; overflow: hidden; height: 100vh; width: 100vw; }
+#canvas-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }
+#canvas-container canvas { display: block; } 
+
+.panel {
+    position: fixed;
+    background: rgba(5, 10, 20, 0.92);
+    border: 1px solid #004488;
+    padding: 10px 12px;
+    box-shadow: 0 0 15px rgba(0, 100, 255, 0.2);
+    border-radius: 6px;
+    z-index: 10;
+    font-size: 11px;
+    backdrop-filter: blur(2px);
+}
+#panel-top { top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; max-width: 95vw; }
+#panel-left { top: 90px; left: 10px; width: 290px; max-height: calc(100vh - 110px); overflow-y: auto; }
+#panel-right { top: 90px; right: 10px; width: 310px; max-height: calc(100vh - 110px); overflow-y: auto; }
+#panel-bottom { bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; } 
+
+.sc-header { color: #00ffff; font-size: 12px; border-bottom: 1px solid #004488; margin-bottom: 8px; padding-bottom: 5px; letter-spacing: 2px; text-transform: uppercase; }
+.version-tag { color: #ffcc00; font-size: 9px; margin-left: 4px; } 
+
+button { border: 1px solid #00ffff; color: #00ffff; background: rgba(0, 50, 100, 0.5); padding: 5px 10px; font-family: 'Orbitron', sans-serif; font-size: 10px; cursor: pointer; letter-spacing: 1px; border-radius: 3px; transition: all 0.15s; }
+button:hover { background: #00ffff; color: #000; }
+button.active { background: #00ffff; color: #000; font-weight: 700; }
+button.danger { border-color: #ff5555; color: #ff5555; }
+button.danger:hover { background: #ff5555; color: #000; }
+button.warn { border-color: #ffaa00; color: #ffaa00; }
+button.warn:hover { background: #ffaa00; color: #000; }
+button:disabled { opacity: 0.4; cursor: not-allowed; } 
+
+input[type="range"] { width: 100%; accent-color: #00ffff; }
+input[type="number"], input[type="text"], select, input[type="date"] { background: rgba(0, 20, 40, 0.8); border: 1px solid #003366; color: #aaddff; padding: 3px 6px; font-family: 'Orbitron', sans-serif; font-size: 11px; width: 100%; border-radius: 3px; }
+input[type="checkbox"] { accent-color: #00ffff; } 
+
+.row { display: flex; justify-content: space-between; margin: 3px 0; align-items: center; gap: 6px; }
+.row label { color: #88ccff; font-size: 10px; }
+.row .val { color: #ffcc00; font-size: 11px; font-weight: 700; } 
+
+.field { margin: 6px 0; }
+.field > label { display: block; color: #88ccff; margin-bottom: 2px; font-size: 10px; }
+.field-inline { display: grid; grid-template-columns: 1fr 60px; gap: 6px; align-items: center; } 
+
+.tabs { display: flex; gap: 3px; margin-bottom: 6px; }
+.tabs button { flex: 1; padding: 4px; font-size: 9px; } 
+
+.lang-toggle { display: flex; gap: 2px; }
+.lang-toggle button { padding: 3px 8px; font-size: 10px; } 
+
+.status-good { color: #33ff33; }
+.status-warn { color: #ffaa00; }
+.status-bad { color: #ff5555; }
+.status-info { color: #88ccff; } 
+
+.metric-box { background: rgba(0, 50, 100, 0.25); border: 1px solid #003366; padding: 6px 8px; border-radius: 3px; margin: 4px 0; } 
+h1.title { color: #00ffff; font-size: 16px; letter-spacing: 3px; } 
+.bigbtn { padding: 10px 16px; font-size: 12px; font-weight: 700; } 
+
+#help-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: none; align-items: center; justify-content: center; }
+#help-overlay.show { display: flex; }
+#help-content { max-width: 700px; max-height: 80vh; overflow-y: auto; background: rgba(5,10,20,0.98); border: 1px solid #00ffff; padding: 20px; border-radius: 6px; }
+#help-content h2 { color: #00ffff; margin-bottom: 12px; letter-spacing: 2px; }
+#help-content h3 { color: #ffcc00; margin: 12px 0 6px; font-size: 13px; }
+#help-content p, #help-content li { font-size: 12px; line-height: 1.5; color: #aaddff; margin-bottom: 4px; }
+#help-content ul { margin-left: 16px; }
+#help-content code { background: rgba(0,50,100,0.5); padding: 1px 5px; border-radius: 2px; color: #ffcc00; } 
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(0,20,40,0.5); }
+::-webkit-scrollbar-thumb { background: #004488; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #006699; }
+</style>
+</head>
+<body>
+<div id="canvas-container"></div> 
+
+<div id="panel-top" class="panel">
+    <h1 class="title">CELESTIUM<span class="version-tag">4.0</span></h1>
+    <div class="lang-toggle">
+        <button id="lang-en" class="active">EN</button>
+        <button id="lang-ko">KO</button>
+    </div>
+    <div style="display:flex; gap:6px;">
+        <button id="btn-play" data-i18n="play">PLAY</button>
+        <button id="btn-reset" data-i18n="reset">RESET</button>
+        <button id="btn-help" data-i18n="help">?</button>
+    </div>
+    <div style="display:flex; gap:6px; align-items:center;">
+        <label data-i18n="warp" style="font-size:10px;color:#88ccff;">WARP</label>
+        <select id="time-warp" style="width:130px;">
+            <option value="1">1× (real-time)</option>
+            <option value="60">60× (1 min/s)</option>
+            <option value="3600">3,600× (1 h/s)</option>
+            <option value="86400" selected>86,400× (1 day/s)</option>
+            <option value="864000">864,000× (10 d/s)</option>
+        </select>
+    </div>
+    <div style="display:flex; gap:6px; align-items:center;">
+        <label style="font-size:10px;color:#88ccff;" data-i18n="visual">VISUAL</label>
+        <select id="scale-mode" style="width:130px;">
+            <option value="exag" selected data-i18n="scale_exag">Exaggerated</option>
+            <option value="real" data-i18n="scale_real">Realistic 1:1</option>
+        </select>
+    </div>
+    <div style="display:flex; gap:6px; align-items:center;">
+        <label style="font-size:10px;color:#88ccff;" data-i18n="camera">CAMERA</label>
+        <select id="camera-mode" style="width:130px;">
+            <option value="free" selected data-i18n="cam_free">Free Orbit</option>
+            <option value="ship" data-i18n="cam_ship">Ship Follow</option>
+            <option value="earth" data-i18n="cam_earth">Earth Centered</option>
+            <option value="moon" data-i18n="cam_moon">Moon Centered</option>
+        </select>
+    </div>
+</div> 
+
+<div id="panel-left" class="panel">
+    <div class="sc-header" data-i18n="telemetry">TELEMETRY</div>
+    <div class="metric-box">
+        <div class="row"><label data-i18n="sim_time">SIM TIME</label><span class="val" id="tm-time">0.000 d</span></div>
+        <div class="row"><label data-i18n="sim_date">DATE</label><span class="val" id="tm-date">--</span></div>
+        <div class="row"><label data-i18n="speed">SPEED</label><span class="val" id="tm-speed">-- km/s</span></div>
+        <div class="row"><label data-i18n="alt_earth">ALT (Earth)</label><span class="val" id="tm-alt-e">-- km</span></div>
+        <div class="row"><label data-i18n="alt_moon">ALT (Moon)</label><span class="val" id="tm-alt-m">-- km</span></div>
+        <div class="row"><label data-i18n="dv_used">ΔV USED</label><span class="val" id="tm-dv">0 m/s</span></div>
+    </div> 
+
+    <div class="sc-header" data-i18n="status">STATUS</div>
+    <div class="metric-box" id="status-box">
+        <div id="status-text" class="status-info" data-i18n="status_idle">Idle — set initial conditions and PLAY</div>
+    </div> 
+
+    <div class="sc-header" data-i18n="mission">MISSION PRESET</div>
+    <div class="field">
+        <select id="mission-preset">
+            <option value="leo" data-i18n="m_leo">LEO Parking Orbit (200 km)</option>
+            <option value="hohmann_moon" data-i18n="m_hm">Hohmann Transfer → Moon</option>
+        </select>
+    </div>
+    <button id="btn-apply-preset" style="width:100%;" data-i18n="apply">APPLY PRESET</button> 
+
+    <div class="sc-header" style="margin-top:10px;" data-i18n="modes">MANEUVER</div>
+    <div class="tabs">
+        <button id="tab-prograde" class="active" data-i18n="prograde">Pro</button>
+        <button id="tab-retro" data-i18n="retrograde">Retro</button>
+        <button id="tab-normal" data-i18n="normal">Norm</button>
+        <button id="tab-radial" data-i18n="radial">Rad</button>
+    </div>
+    <div class="field-inline">
+        <label data-i18n="burn_dv">ΔV (m/s)</label>
+        <input type="number" id="burn-dv" value="100" min="-5000" max="5000" step="10">
+    </div>
+    <button id="btn-burn" class="warn" style="width:100%;margin-top:4px;" data-i18n="burn">EXECUTE BURN</button> 
+
+    <div class="sc-header" style="margin-top:10px;" data-i18n="landing">DEEP GA AUTO-LAND</div>
+    <button id="btn-landing-mode" class="danger" style="width:100%;margin-top:4px;" data-i18n="enable_landing">ENABLE DEEP GA (POP:100)</button>
+    <button id="btn-export-csv" style="width:100%;margin-top:8px;background:rgba(0,100,50,0.5);border-color:#00ff88;color:#00ff88;">⬇ EXPORT CSV LOG</button>
+</div> 
+
+<div id="panel-right" class="panel">
+    <div class="sc-header" data-i18n="vehicle">VEHICLE PARAMETERS</div>
+    <div class="field">
+        <label data-i18n="vehicle_preset">Preset</label>
+        <select id="vehicle-preset">
+            <option value="apollo" data-i18n="v_apollo">Apollo S-IVB</option>
+            <option value="custom" data-i18n="v_custom">Custom</option>
+        </select>
+    </div>
+    <div class="field">
+        <label><span data-i18n="dry_mass">Dry Mass</span>: <span class="val" id="lab-dry">13500 kg</span></label>
+        <input type="range" id="sl-dry" min="1000" max="200000" step="500" value="13500">
+    </div>
+
+    <div class="sc-header" style="margin-top:10px;" data-i18n="initcond">PHYSICS ENGINE</div>
+    <div class="field">
+        <label data-i18n="dt">Integration Step Δt (s)</label>
+        <select id="in-dt">
+            <option value="1">1 s (Extreme accuracy)</option>
+            <option value="10" selected>10 s (RK4 Recommended)</option>
+        </select>
+    </div>
+    <div class="field">
+        <label data-i18n="integrator">Integrator</label>
+        <select id="in-integrator">
+            <option value="rk4" selected>RK4 (Runge-Kutta 4)</option>
+        </select>
+    </div> 
+
+    <div class="sc-header" style="margin-top:10px;" data-i18n="trail">TRAJECTORY TRAIL</div>
+    <div class="row"><label data-i18n="trail_show">Show Trail</label>
+        <input type="checkbox" id="cb-trail" checked>
+    </div>
+    <button id="btn-clear-trail" style="width:100%;margin-top:4px;" data-i18n="clear_trail">CLEAR TRAIL</button> 
+</div> 
+
+<div id="help-overlay">
+    <div id="help-content">
+        <h2>CELESTIUM 4.0 — QUICK GUIDE</h2>
+        <p>Pure RK4 physics-based solar-system simulator with Deep Genetic Algorithm.</p>
+        <div style="text-align:right; margin-top:14px;">
+            <button id="btn-close-help">CLOSE</button>
+        </div>
+    </div>
+</div> 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script> 
+
+<script>
+'use strict'; 
+
+// DOM Utility
+const UI = (id) => document.getElementById(id);
+const setText = (id, txt) => { if(UI(id)) UI(id).textContent = txt; };
+const setStatus = (txt) => setText('status-text', txt);
+const fmt = (n, d=2) => isFinite(n) ? Number(n).toFixed(d) : '--';
+
+/* =====[ PART 1 ] === 물리 상수 (진짜 스케일) ========== */
+const G = 6.67430e-11; 
+const M_EARTH = 5.9722e24; 
+const R_EARTH = 6371000; 
+const M_MOON = 7.342e22; 
+const R_MOON = 1737400; 
+const D_MOON = 384400000; 
+const DAY = 86400;
+
+// 시각적 스케일 (렌더링용, 실제 물리 연산에는 미적용)
+const VIS_SCALE_EXAG = 1e-6; 
+const VIS_SCALE_REAL = 1e-7;
+
+/* =====[ PART 2 ] === 전역 상태 =========================== */
+const S = {
+    scene: null, cam: null, rdr: null, ctrl: null,
+    meshes: {}, trail: null, trailPos: [], csvLog: [],
+    sim: { t: 0, warp: 86400, paused: true, dt: 10 },
+    vis: { scale: 'exag', trail: true },
+    camMode: 'free',
+    ship: {
+        pos: new THREE.Vector3(R_EARTH + 200000, 0, 0),
+        vel: new THREE.Vector3(0, 0, Math.sqrt(G * M_EARTH / (R_EARTH + 200000))),
+        dvUsed: 0,
+        burnDir: 'prograde',
+        mass: 13500
+    },
+    moon: {
+        pos: new THREE.Vector3(D_MOON, 0, 0),
+        vel: new THREE.Vector3(0, 0, 1022)
+    },
+    gaActive: false
+}; 
+
+/* =====[ PART 3 ] === Three.js 초기화 ================== */
+function initScene() {
+    const host = UI('canvas-container');
+    S.scene = new THREE.Scene();
+    S.scene.background = new THREE.Color(0x000005);
+    S.cam = new THREE.PerspectiveCamera(50, host.clientWidth / host.clientHeight, 0.1, 1e7);
+    S.cam.position.set(200, 100, 400); 
+
+    S.rdr = new THREE.WebGLRenderer({antialias:true, logarithmicDepthBuffer:true});
+    S.rdr.setSize(host.clientWidth, host.clientHeight);
+    host.appendChild(S.rdr.domElement); 
+
+    S.ctrl = new THREE.OrbitControls(S.cam, S.rdr.domElement);
+    S.ctrl.enableDamping = true; 
+    S.ctrl.dampingFactor = 0.08;
+
+    S.scene.add(new THREE.AmbientLight(0x444455, 0.8));
+    const sunLight = new THREE.PointLight(0xffffff, 1.5, 0, 0); 
+    S.scene.add(sunLight); 
+
+    // Earth
+    const earthMat = new THREE.MeshPhongMaterial({color: 0x3377ff, wireframe: true});
+    S.meshes.earth = new THREE.Mesh(new THREE.SphereGeometry(R_EARTH * VIS_SCALE_EXAG * 2, 32, 32), earthMat);
+    S.scene.add(S.meshes.earth);
+
+    // Moon
+    const moonMat = new THREE.MeshPhongMaterial({color: 0xcccccc, wireframe: true});
+    S.meshes.moon = new THREE.Mesh(new THREE.SphereGeometry(R_MOON * VIS_SCALE_EXAG * 4, 32, 32), moonMat);
+    S.scene.add(S.meshes.moon);
+
+    // Ship
+    S.meshes.ship = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 8), new THREE.MeshBasicMaterial({color: 0xffcc00}));
+    S.scene.add(S.meshes.ship);
+
+    // Trail
+    const tg = new THREE.BufferGeometry();
+    tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(5000 * 3), 3));
+    S.trail = new THREE.Line(tg, new THREE.LineBasicMaterial({color: 0x00ffff, transparent: true, opacity: 0.7}));
+    S.scene.add(S.trail); 
+
+    window.addEventListener('resize', () => {
+        S.cam.aspect = host.clientWidth / host.clientHeight; 
+        S.cam.updateProjectionMatrix();
+        S.rdr.setSize(host.clientWidth, host.clientHeight);
+    }); 
+} 
+
+/* =====[ PART 4 ] === 물리 엔진 (RK4 기반) ========================== */
+function getGravityAccel(pos, targetPos, targetMass) {
+    const r = new THREE.Vector3().subVectors(targetPos, pos);
+    const distSq = r.lengthSq();
+    return r.normalize().multiplyScalar((G * targetMass) / distSq);
+}
+
+function deriv(p, v, mPos) {
+    const aEarth = getGravityAccel(p, new THREE.Vector3(0,0,0), M_EARTH);
+    const aMoon = getGravityAccel(p, mPos, M_MOON);
+    return { dp: v.clone(), dv: aEarth.add(aMoon) };
+}
+
+function stepRK4(dt) {
+    // 달 궤도 업데이트 (단순화된 원운동 유지를 위한 오일러 적분)
+    const aMoonCenter = getGravityAccel(S.moon.pos, new THREE.Vector3(0,0,0), M_EARTH);
+    S.moon.vel.addScaledVector(aMoonCenter, dt);
+    S.moon.pos.addScaledVector(S.moon.vel, dt);
+
+    // 우주선 RK4 적분 (순수 미적분 연산)
+    const p = S.ship.pos.clone(), v = S.ship.vel.clone(), m = S.moon.pos.clone();
+    
+    const k1 = deriv(p, v, m);
+    const k2 = deriv(p.clone().addScaledVector(k1.dp, dt/2), v.clone().addScaledVector(k1.dv, dt/2), m);
+    const k3 = deriv(p.clone().addScaledVector(k2.dp, dt/2), v.clone().addScaledVector(k2.dv, dt/2), m);
+    const k4 = deriv(p.clone().addScaledVector(k3.dp, dt), v.clone().addScaledVector(k3.dv, dt), m);
+    
+    S.ship.pos.addScaledVector(k1.dp, dt/6).addScaledVector(k2.dp, dt/3).addScaledVector(k3.dp, dt/3).addScaledVector(k4.dp, dt/6);
+    S.ship.vel.addScaledVector(k1.dv, dt/6).addScaledVector(k2.dv, dt/3).addScaledVector(k3.dv, dt/3).addScaledVector(k4.dv, dt/6);
+
+    checkCollision();
+}
+
+function checkCollision() {
+    if (S.ship.pos.length() <= R_EARTH) {
+        setStatus(`CRASHED @ EARTH. Speed: ${fmt(S.ship.vel.length(), 2)} m/s`);
+        S.sim.paused = true;
+    }
+    const distToMoon = S.ship.pos.distanceTo(S.moon.pos);
+    if (distToMoon <= R_MOON) {
+        const relVel = new THREE.Vector3().subVectors(S.ship.vel, S.moon.vel).length();
+        setStatus(`LANDED @ MOON. Touchdown Vel: ${fmt(relVel, 2)} m/s`);
+        S.sim.paused = true;
+    }
+}
+
+/* =====[ PART 5 ] === Deep Genetic Algorithm (최적화) =================== */
+function startDeepGA() {
+    if(S.gaActive) return;
+    S.gaActive = true;
+    setStatus("DEEP GA BOOTING... POPULATION: 100, GENERATIONS: 150");
+    
+    const popSize = 100;
+    const dnaLength = 30; // 궤도 수정 분기점
+    let population = Array.from({length: popSize}, () => ({
+        dna: Array.from({length: dnaLength}, () => new THREE.Vector3((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100)),
+        fitness: 0
+    }));
+
+    let gen = 0;
+    const interval = setInterval(() => {
+        gen++;
+        
+        // 적합도 평가
+        population.forEach(ind => {
+            let vPos = S.ship.pos.clone(), vVel = S.ship.vel.clone();
+            let mPos = S.moon.pos.clone();
+            
+            for (let step = 0; step < dnaLength; step++) {
+                let rScM = new THREE.Vector3().subVectors(vPos, mPos);
+                let aM = rScM.normalize().multiplyScalar(-(G * M_MOON) / rScM.lengthSq());
+                vVel.addScaledVector(new THREE.Vector3().addVectors(aM, ind.dna[step]), 300);
+                vPos.addScaledVector(vVel, 300);
+            }
+            let dist = new THREE.Vector3().subVectors(vPos, mPos).length() - R_MOON;
+            ind.fitness = 1 / (Math.max(0, dist) + 1); 
+        });
+
+        population.sort((a, b) => b.fitness - a.fitness);
+        
+        if (gen % 10 === 0) {
+            setStatus(`GA TRAINING [${gen}/150] | Best Fitness: ${population[0].fitness.toExponential(3)}`);
+        }
+
+        // 교차 및 돌연변이 (엘리트 15% 보존)
+        let nextGen = population.slice(0, 15).map(ind => ({ dna: ind.dna.map(v => v.clone()), fitness: 0 }));
+        
+        while(nextGen.length < popSize) {
+            let p1 = population[Math.floor(Math.random() * 30)].dna;
+            let p2 = population[Math.floor(Math.random() * 30)].dna;
+            let childDna = p1.map((v, i) => {
+                let gene = Math.random() > 0.5 ? v.clone() : p2[i].clone();
+                if (Math.random() < 0.2) gene.add(new THREE.Vector3((Math.random()-0.5)*30, (Math.random()-0.5)*30, (Math.random()-0.5)*30)); // 20% 돌연변이
+                return gene;
+            });
+            nextGen.push({ dna: childDna, fitness: 0 });
+        }
+        population = nextGen;
+
+        if (gen >= 150) {
+            clearInterval(interval);
+            S.ship.vel.add(population[0].dna[0]); 
+            S.gaActive = false;
+            setStatus(`DEEP GA COMPLETE. BEST VECTOR INJECTED. PLAY TO SIMULATE.`);
+        }
+    }, 20); // 브라우저 논블로킹
+}
+
+/* =====[ PART 6 ] === 기동 및 UI 렌더링 동기화 ================== */
+function executeBurn() {
+    const dv = parseFloat(UI('burn-dv').value);
+    if(isNaN(dv)) return;
+
+    let dir = new THREE.Vector3();
+    let prograde = S.ship.vel.clone().normalize();
+    let normal = new THREE.Vector3().crossVectors(S.ship.pos, S.ship.vel).normalize();
+    let radial = S.ship.pos.clone().normalize();
+
+    if(S.ship.burnDir === 'prograde') dir = prograde;
+    if(S.ship.burnDir === 'retrograde') dir = prograde.clone().negate();
+    if(S.ship.burnDir === 'normal') dir = normal;
+    if(S.ship.burnDir === 'radial') dir = radial;
+
+    S.ship.vel.addScaledVector(dir, dv);
+    S.ship.dvUsed += Math.abs(dv);
+    setStatus(`BURN EXECUTED: ${dv} m/s [${S.ship.burnDir.toUpperCase()}]`);
+}
+
+function syncGraphics() {
+    const scale = S.vis.scale === 'exag' ? VIS_SCALE_EXAG : VIS_SCALE_REAL;
+    
+    S.meshes.earth.position.set(0,0,0);
+    S.meshes.moon.position.copy(S.moon.pos).multiplyScalar(scale);
+    S.meshes.ship.position.copy(S.ship.pos).multiplyScalar(scale);
+
+    if (S.ship.vel.lengthSq() > 1) {
+        S.meshes.ship.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), S.ship.vel.clone().normalize());
+    }
+
+    if(S.camMode === 'ship') S.ctrl.target.copy(S.meshes.ship.position);
+    else if(S.camMode === 'moon') S.ctrl.target.copy(S.meshes.moon.position);
+    else if(S.camMode === 'earth') S.ctrl.target.set(0,0,0);
+    
+    // Trail 업데이트
+    if (S.vis.trail) {
+        S.trailPos.push(S.meshes.ship.position.clone());
+        if (S.trailPos.length > 5000) S.trailPos.shift();
+        const arr = S.trail.geometry.attributes.position.array;
+        for (let i=0; i<S.trailPos.length; i++) {
+            arr[i*3]=S.trailPos[i].x; arr[i*3+1]=S.trailPos[i].y; arr[i*3+2]=S.trailPos[i].z;
+        }
+        S.trail.geometry.attributes.position.needsUpdate = true;
+        S.trail.geometry.setDrawRange(0, S.trailPos.length);
+    }
+}
+
+function updateTelemetry() {
+    setText('tm-time', fmt(S.sim.t / DAY, 2) + ' d');
+    setText('tm-speed', fmt(S.ship.vel.length() / 1000, 3));
+    setText('tm-alt-e', fmt((S.ship.pos.length() - R_EARTH) / 1000, 0));
+    setText('tm-alt-m', fmt((S.ship.pos.distanceTo(S.moon.pos) - R_MOON) / 1000, 0));
+    setText('tm-dv', fmt(S.ship.dvUsed, 0));
+}
+
+function exportCSV() {
+    if(S.csvLog.length === 0) return setStatus("NO DATA TO EXPORT");
+    let csv = "Time(s),X,Y,Z,Vel_X,Vel_Y,Vel_Z\n";
+    S.csvLog.forEach(r => csv += r.join(',') + "\n");
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Celestium_Telemetry_${Date.now()}.csv`;
+    a.click();
+    setStatus("CSV EXPORTED SUCCESSFULLY");
+}
+
+/* =====[ PART 7 ] === 메인 이벤트 및 루프 ===================== */
+function bindEvents() {
+    UI('btn-play').onclick = () => {
+        S.sim.paused = !S.sim.paused;
+        UI('btn-play').textContent = S.sim.paused ? 'PLAY' : 'PAUSED';
+        setStatus(S.sim.paused ? 'SIMULATION PAUSED' : 'SIMULATION RUNNING');
+    };
+    
+    UI('btn-reset').onclick = () => {
+        S.sim.t = 0; S.sim.paused = true; S.trailPos = [];
+        S.ship.pos.set(R_EARTH + 200000, 0, 0);
+        S.ship.vel.set(0, 0, Math.sqrt(G * M_EARTH / (R_EARTH + 200000)));
+        S.moon.pos.set(D_MOON, 0, 0); S.moon.vel.set(0, 0, 1022);
+        S.ship.dvUsed = 0; S.csvLog = [];
+        UI('btn-play').textContent = 'PLAY';
+        setStatus("SYSTEM RESET TO LEO (200km)");
+    };
+
+    UI('btn-burn').onclick = executeBurn;
+    UI('btn-landing-mode').onclick = startDeepGA;
+    UI('btn-export-csv').onclick = exportCSV;
+    UI('btn-clear-trail').onclick = () => S.trailPos = [];
+
+    ['prograde','retro','normal','radial'].forEach(d => {
+        UI(`tab-${d}`).onclick = (e) => {
+            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            S.ship.burnDir = d === 'retro' ? 'retrograde' : d;
+        };
+    });
+
+    UI('time-warp').onchange = (e) => S.sim.warp = parseInt(e.target.value);
+    UI('scale-mode').onchange = (e) => { S.vis.scale = e.target.value; S.trailPos = []; };
+    UI('camera-mode').onchange = (e) => S.camMode = e.target.value;
+    UI('cb-trail').onchange = (e) => { S.vis.trail = e.target.checked; S.trail.visible = S.vis.trail; };
+
+    UI('btn-apply-preset').onclick = () => {
+        if(UI('mission-preset').value === 'hohmann_moon') {
+            const r1 = S.ship.pos.length();
+            const r2 = D_MOON;
+            const vT = Math.sqrt(G * M_EARTH * ((2/r1) - (1/((r1+r2)/2))));
+            const dv = vT - S.ship.vel.length();
+            UI('burn-dv').value = dv.toFixed(1);
+            UI('tab-prograde').click();
+            setStatus(`HOHMANN TRANSFER LOADED. REQUIRED dV: ${dv.toFixed(1)} m/s`);
+        }
+    };
+    
+    UI('btn-help').onclick = () => UI('help-overlay').classList.add('show');
+    UI('btn-close-help').onclick = () => UI('help-overlay').classList.remove('show');
+}
+
+let lastLog = 0;
+function animate() {
+    requestAnimationFrame(animate);
+    
+    if (!S.sim.paused) {
+        const dt = S.sim.dt;
+        const subSteps = Math.ceil(S.sim.warp / dt) / 60; // 60fps 기준
+        
+        for (let i = 0; i < subSteps; i++) {
+            stepRK4(dt);
+            S.sim.t += dt;
+        }
+
+        // 1초 단위로만 CSV 로깅 (메모리 절약)
+        if (performance.now() - lastLog > 1000) {
+            S.csvLog.push([S.sim.t, S.ship.pos.x, S.ship.pos.y, S.ship.pos.z, S.ship.vel.x, S.ship.vel.y, S.ship.vel.z]);
+            lastLog = performance.now();
+        }
+    }
+
+    syncGraphics();
+    updateTelemetry();
+    S.ctrl.update();
+    S.rdr.render(S.scene, S.cam);
+}
+
+initScene();
+bindEvents();
+animate();
+setStatus("CELESTIUM 4.0 (DEEP PHYSICS) INITIALIZED.");
+</script>
+</body>
+</html>
